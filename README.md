@@ -1,16 +1,26 @@
-# React + Vite
+# Suraksha One
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## 🚀 Live Demo
 
-Currently, two official plugins are available:
+[Visit Suraksha One](https://suraksha-one-ten.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 📋 Project Overview
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Suraksha One** is an open-source hardware & software safety platform engineered to eradicate preventable deaths in confined-space sanitation and construction environments. Combining pre-entry toxic gas detection with real-time fall, impact, and vital telemetry monitoring in a single smart helmet, it aims to eliminate preventable workplace fatalities across construction and sewer operations.
 
-## Expanding the Oxlint configuration
+## 🛠️ System Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+1. **Pre-Entry Gas Audits**: Detects hazardous gas concentrations (e.g., Methane/MQ4) before workers enter confined spaces, mitigating toxic inhalation risks.
+2. **Fall and Impact Detection**: Built-in 6-axis IMU (MPU6050) senses high-G impacts (>4.8G) and free-fall events to alert remote dispatchers instantly.
+3. **Real-time Telemetry HUD**: Displays live SpO2, heart rate, gas PPM levels, and GPS position indicators on a centralized supervisor interface.
+4. **Interactive 3D Schematic Explorer**: Provides an exploded 3D view of the helmet’s sensor and module array (LCD display, battery housing, transceiver modules, gas sensors).
+5. **National Registry & Incident Audits**: Integrates real-world safety reports and incident databases directly within the app to support regulatory compliance.
+
+## 🏗️ Technical Stack
+
+* **Frontend**: React 19, Vite, Vanilla CSS
+* **Animations**: GSAP, Framer Motion
+* **3D Graphics**: Three.js (WebGL rendering)
+* **Design System**: Telemetry HUD dashboard layout, typography, and dark mode interface.

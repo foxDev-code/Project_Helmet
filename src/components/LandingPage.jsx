@@ -318,7 +318,7 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
               <li><a href="#schematic" className="nav-link">3D Blueprint</a></li>
               <li>
                 <a
-                  href="https://suraksha-one-iota.vercel.app"
+                  href="https://suraksha-one-ten.vercel.app"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-header-dashboard cursor-pointer"
@@ -354,7 +354,7 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
           
           <div className="hero-cta-group">
             <a
-              href="https://suraksha-one-iota.vercel.app"
+              href="https://suraksha-one-ten.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary cursor-pointer"
@@ -719,7 +719,7 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
             Launch the standalone live telemetry console to monitor gas levels, heart rate, SpO2, G-force impacts, and simulated emergency dispatches in real time.
           </p>
           <a
-            href="https://suraksha-one-iota.vercel.app"
+            href="https://suraksha-one-ten.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary font-semibold text-lg py-4 px-10 cursor-pointer"
