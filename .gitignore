@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Recovery and legacy folders
+merged/
+reconstructed/
+reconstructed_full/
+recovered/
+recovered_all/
+recovered_clean/
+dashboard.html
+dashboard (1).html
+graphify-out/
+skills-lock.json
