@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import gsap from 'gsap';
 
 const componentDetailsMap = {
@@ -53,12 +54,22 @@ const componentDetailsMap = {
   }
 };
 
-export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
+export default function ThreeHelmet({ hero = false, playHoverClick, playExplodeHiss }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   
   const [isExploded, setIsExploded] = useState(false);
   const [selectedComp, setSelectedComp] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const motionStateRef = useRef({ isExploded: false, isPaused: false });
+  motionStateRef.current = { isExploded, isPaused };
+  useEffect(() => {
+    if (!selectedComp) return;
+    const trigger = document.activeElement;
+    containerRef.current?.querySelector('.popover-close-btn')?.focus();
+    return () => { if (trigger instanceof HTMLElement) trigger.focus(); };
+  }, [selectedComp]);
 
   // Keep references to group and camera for animate & GSAP tweens
   const helmetGroupRef = useRef(null);
@@ -86,24 +97,39 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
   useEffect(() => {
     const helmetCanvas = canvasRef.current;
     if (!helmetCanvas) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const hScene = new THREE.Scene();
     const hCamera = new THREE.PerspectiveCamera(45, helmetCanvas.clientWidth / helmetCanvas.clientHeight, 0.1, 1000);
     cameraRef.current = hCamera;
 
-    const hRenderer = new THREE.WebGLRenderer({ canvas: helmetCanvas, alpha: true, antialias: true });
-    hRenderer.setSize(helmetCanvas.clientWidth, helmetCanvas.clientHeight);
+    let hRenderer;
+    try {
+      hRenderer = new THREE.WebGLRenderer({ canvas: helmetCanvas, alpha: true, antialias: true });
+    } catch {
+      setUnavailable(true);
+      return;
+    }
+    hRenderer.setSize(helmetCanvas.clientWidth, helmetCanvas.clientHeight, false);
     hRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    hRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    hRenderer.toneMappingExposure = 1.25;
+    const studio = new RoomEnvironment();
+    const reflectionGenerator = new THREE.PMREMGenerator(hRenderer);
+    const reflectionMap = reflectionGenerator.fromScene(studio, 0.04);
+    hScene.environment = reflectionMap.texture;
+    studio.dispose();
+    reflectionGenerator.dispose();
 
     // Studio Lighting Setup
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     hScene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffb000, 1.8);
+    const dirLight1 = new THREE.DirectionalLight(0xffd1a1, 3.5);
     dirLight1.position.set(6, 12, 8);
     hScene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x00f0ff, 1.2);
+    const dirLight2 = new THREE.DirectionalLight(0xa6caff, 2.4);
     dirLight2.position.set(-6, -4, -6);
     hScene.add(dirLight2);
 
@@ -117,9 +143,9 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
     // 1. Deep Metallic Maroon Glossy Helmet Shell
     const shellGeo = new THREE.SphereGeometry(3.5, 64, 48, 0, Math.PI * 2, 0, Math.PI * 0.52);
     const shellMat = new THREE.MeshStandardMaterial({
-      color: 0x58141e,
-      roughness: 0.18,
-      metalness: 0.35,
+      color: 0x303843,
+      roughness: 0.28,
+      metalness: 0.6,
       wireframe: false
     });
     const shellMesh = new THREE.Mesh(shellGeo, shellMat);
@@ -132,20 +158,21 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
       color: 0xffb000,
       wireframe: true,
       transparent: true,
-      opacity: 0.15
+      opacity: hero ? 0.035 : 0.15
     });
     const wireMesh = new THREE.Mesh(wireGeo, wireMat);
+    wireMesh.visible = !hero;
     helmetGroup.add(wireMesh);
 
     // 2. Front Visor Brim with Rubber Trim
     const visorGeo = new THREE.CylinderGeometry(3.6, 4.2, 0.35, 64, 1, true, -Math.PI * 0.36, Math.PI * 0.72);
-    const visorMat = new THREE.MeshStandardMaterial({ color: 0x420f17, roughness: 0.2, metalness: 0.3, side: THREE.DoubleSide });
+    const visorMat = new THREE.MeshStandardMaterial({ color: 0x222b34, roughness: 0.25, metalness: 0.5, side: THREE.DoubleSide });
     const visorMesh = new THREE.Mesh(visorGeo, visorMat);
     visorMesh.position.set(0, -0.15, 0.1);
     helmetGroup.add(visorMesh);
 
     const brimTrimGeo = new THREE.TorusGeometry(3.9, 0.08, 16, 64);
-    const brimTrimMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+    const brimTrimMat = new THREE.MeshStandardMaterial({ color: 0xd96223, roughness: 0.35, metalness: 0.3 });
     const brimTrimMesh = new THREE.Mesh(brimTrimGeo, brimTrimMat);
     brimTrimMesh.rotation.x = Math.PI / 2;
     brimTrimMesh.position.y = -0.18;
@@ -153,7 +180,7 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
 
     // 3. Top Crest Ridge
     const ridgeGeo = new THREE.BoxGeometry(0.42, 3.8, 0.7);
-    const ridgeMat = new THREE.MeshStandardMaterial({ color: 0x3d0b12, roughness: 0.25 });
+    const ridgeMat = new THREE.MeshStandardMaterial({ color: 0xd96223, roughness: 0.3, metalness: 0.35 });
     const ridgeMesh = new THREE.Mesh(ridgeGeo, ridgeMat);
     ridgeMesh.position.set(0, 1.75, 0);
     helmetGroup.add(ridgeMesh);
@@ -324,7 +351,7 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
 
     const beaconMeshes = [];
     nodeData.forEach(node => {
-      const nodeGeo = new THREE.SphereGeometry(0.24, 16, 16);
+      const nodeGeo = new THREE.SphereGeometry(0.1, 16, 16);
       const nodeMat = new THREE.MeshBasicMaterial({ color: node.color });
       const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
       nodeMesh.name = node.id;
@@ -339,10 +366,12 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
     shadowMesh.rotation.x = Math.PI / 2;
     shadowMesh.position.y = -3.4;
+    shadowMesh.visible = !hero;
     hScene.add(shadowMesh);
 
     hScene.add(helmetGroup);
-    hCamera.position.set(0, 1.5, 10.5);
+    helmetGroup.rotation.set(0.06, -0.55, -0.04);
+    hCamera.position.set(0, 1.5, hero ? 11.5 : 10.5);
     hCamera.lookAt(0, 0, 0);
 
     // Mouse rotation & raycasting logic
@@ -352,21 +381,25 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
     let mouseStartX = 0;
     let mouseStartY = 0;
     let isDragging = false;
+    let didDrag = false;
     let previousMouseX = 0;
     let previousMouseY = 0;
 
     const handleMouseDown = (e) => {
-      isDragging = false;
+      isDragging = true;
+      didDrag = false;
       mouseStartX = e.clientX;
       mouseStartY = e.clientY;
       previousMouseX = e.clientX;
       previousMouseY = e.clientY;
+      helmetCanvas.setPointerCapture(e.pointerId);
     };
 
     const handleMouseMove = (e) => {
+      if (!isDragging) return;
       const dist = Math.hypot(e.clientX - mouseStartX, e.clientY - mouseStartY);
       if (dist > 5) {
-        isDragging = true;
+        didDrag = true;
       }
       if (e.buttons === 1) {
         helmetGroup.rotation.y += (e.clientX - previousMouseX) * 0.01;
@@ -377,7 +410,7 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
     };
 
     const handleClick = (e) => {
-      if (isDragging) return;
+      if (didDrag) return;
 
       const rect = helmetCanvas.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -401,25 +434,39 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
       }
     };
 
-    helmetCanvas.addEventListener('mousedown', handleMouseDown);
-    helmetCanvas.addEventListener('mousemove', handleMouseMove);
+    const handleKeyDown = (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      e.preventDefault();
+      setIsPaused(true);
+      helmetGroup.rotation.y += e.key === 'ArrowLeft' ? -0.15 : e.key === 'ArrowRight' ? 0.15 : 0;
+      helmetGroup.rotation.x += e.key === 'ArrowUp' ? -0.15 : e.key === 'ArrowDown' ? 0.15 : 0;
+    };
+    const handlePointerEnd = () => { isDragging = false; };
+    helmetCanvas.addEventListener('pointerdown', handleMouseDown);
+    helmetCanvas.addEventListener('pointermove', handleMouseMove);
+    helmetCanvas.addEventListener('pointerup', handlePointerEnd);
+    helmetCanvas.addEventListener('pointercancel', handlePointerEnd);
+    helmetCanvas.addEventListener('keydown', handleKeyDown);
     helmetCanvas.addEventListener('click', handleClick);
 
     let rafId = null;
-    function animateHelmet() {
+    let previousTime = performance.now();
+    function animateHelmet(now = performance.now()) {
       rafId = requestAnimationFrame(animateHelmet);
+      const delta = Math.min((now - previousTime) / 1000, 0.05);
+      previousTime = now;
       
       // Auto-rotation when not dragging and not exploded
-      if (!isDragging && !isExploded) {
-        helmetGroup.rotation.y += 0.004;
+      if (!isDragging && !motionStateRef.current.isExploded && !motionStateRef.current.isPaused && !reducedMotion) {
+        helmetGroup.rotation.y += delta * 0.065;
       }
 
       // Pulse front point light intensity
       const time = Date.now() * 0.003;
-      frontSpotLight.intensity = 2.2 + Math.sin(time) * 0.6;
+      frontSpotLight.intensity = reducedMotion ? 2.2 : 2.2 + Math.sin(time) * 0.6;
 
       // Pulse beacon glow
-      const pulseScale = 1.0 + Math.sin(Date.now() * 0.006) * 0.12;
+      const pulseScale = reducedMotion ? 1 : 1.0 + Math.sin(Date.now() * 0.006) * 0.12;
       beaconMeshes.forEach(mesh => {
         mesh.scale.set(pulseScale, pulseScale, pulseScale);
       });
@@ -432,92 +479,74 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
       if (!helmetCanvas) return;
       hCamera.aspect = helmetCanvas.clientWidth / helmetCanvas.clientHeight;
       hCamera.updateProjectionMatrix();
-      hRenderer.setSize(helmetCanvas.clientWidth, helmetCanvas.clientHeight);
+      hRenderer.setSize(helmetCanvas.clientWidth, helmetCanvas.clientHeight, false);
     };
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(helmetCanvas);
 
     return () => {
-      helmetCanvas.removeEventListener('mousedown', handleMouseDown);
-      helmetCanvas.removeEventListener('mousemove', handleMouseMove);
+      helmetCanvas.removeEventListener('pointerdown', handleMouseDown);
+      helmetCanvas.removeEventListener('pointermove', handleMouseMove);
+      helmetCanvas.removeEventListener('pointerup', handlePointerEnd);
+      helmetCanvas.removeEventListener('pointercancel', handlePointerEnd);
+      helmetCanvas.removeEventListener('keydown', handleKeyDown);
       helmetCanvas.removeEventListener('click', handleClick);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       if (rafId) cancelAnimationFrame(rafId);
       
-      // Disposing geometries and materials
-      shellGeo.dispose();
-      shellMat.dispose();
-      wireGeo.dispose();
-      wireMat.dispose();
-      visorGeo.dispose();
-      visorMat.dispose();
-      brimTrimGeo.dispose();
-      brimTrimMat.dispose();
-      ridgeGeo.dispose();
-      ridgeMat.dispose();
-      boardRingGeo.dispose();
-      boardRingMat.dispose();
-      camLensGeo.dispose();
-      camLensMat.dispose();
-      pupilGeo.dispose();
-      pupilMat.dispose();
-      lcdCaseGeo.dispose();
-      lcdCaseMat.dispose();
-      lcdScreenGeo.dispose();
-      lcdScreenMat.dispose();
-      boxGeo.dispose();
-      boxMat.dispose();
-      strapGeo.dispose();
-      strapMat.dispose();
-      shadowGeo.dispose();
-      shadowMat.dispose();
+      hScene.traverse((object) => {
+        object.geometry?.dispose();
+        if (object.material) object.material.dispose();
+      });
+      reflectionMap.dispose();
       hRenderer.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExploded]);
+  }, []);
 
   // GSAP animation triggers based on React state changes
   useEffect(() => {
     if (!ledRingGroupRef.current) return;
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.9;
 
     const explode = isExploded;
-    gsap.to(ledRingGroupRef.current.position, { z: explode ? 5.4 : 3.45, duration: 0.9, ease: 'back.out(1.4)' });
-    gsap.to(lcdGroupRef.current.position, { y: explode ? 4.2 : 2.2, z: explode ? 3.6 : 2.7, duration: 0.9, ease: 'back.out(1.4)' });
-    gsap.to(mq4SensorRef.current.position, { x: explode ? -4.2 : -2.1, z: explode ? 3.6 : 2.2, duration: 0.9, ease: 'back.out(1.4)' });
-    gsap.to(mq6SensorRef.current.position, { x: explode ? 4.2 : 2.1, z: explode ? 3.6 : 2.2, duration: 0.9, ease: 'back.out(1.4)' });
-    gsap.to(sideBoxMeshRef.current.position, { x: explode ? -5.4 : -3.2, duration: 0.9, ease: 'back.out(1.4)' });
-    gsap.to(strapMeshRef.current.position, { y: explode ? -1.2 : 0, duration: 0.9, ease: 'back.out(1.4)' });
+    gsap.to(ledRingGroupRef.current.position, { z: explode ? 5.4 : 3.45, duration, ease: 'back.out(1.4)' });
+    gsap.to(lcdGroupRef.current.position, { y: explode ? 4.2 : 2.2, z: explode ? 3.6 : 2.7, duration, ease: 'back.out(1.4)' });
+    gsap.to(mq4SensorRef.current.position, { x: explode ? -4.2 : -2.1, z: explode ? 3.6 : 2.2, duration, ease: 'back.out(1.4)' });
+    gsap.to(mq6SensorRef.current.position, { x: explode ? 4.2 : 2.1, z: explode ? 3.6 : 2.2, duration, ease: 'back.out(1.4)' });
+    gsap.to(sideBoxMeshRef.current.position, { x: explode ? -5.4 : -3.2, duration, ease: 'back.out(1.4)' });
+    gsap.to(strapMeshRef.current.position, { y: explode ? -1.2 : 0, duration, ease: 'back.out(1.4)' });
 
     if (cameraRef.current) {
       if (explode) {
-        gsap.to(cameraRef.current.position, { z: 12.5, y: 2.2, duration: 1.0, ease: 'power2.out' });
+        gsap.to(cameraRef.current.position, { z: hero ? 15 : 12.5, y: 2.2, duration, ease: 'power2.out' });
       } else {
-        gsap.to(cameraRef.current.position, { z: 10.5, y: 1.5, duration: 1.0, ease: 'power2.out' });
+        gsap.to(cameraRef.current.position, { z: hero ? 11.5 : 10.5, y: 1.5, duration, ease: 'power2.out' });
       }
     }
-  }, [isExploded]);
+  }, [isExploded, hero]);
 
   const handleExplodeClick = () => {
     const nextState = !isExploded;
     toggleExploded3D(nextState);
-    if (nextState) {
-      setSelectedComp('max');
-    }
+    setSelectedComp(null);
   };
 
   const handleResetClick = () => {
     toggleExploded3D(false);
     if (helmetGroupRef.current) {
-      gsap.to(helmetGroupRef.current.rotation, { x: 0, y: 0, z: 0, duration: 0.8, ease: 'power2.out' });
+      gsap.to(helmetGroupRef.current.rotation, { x: 0.06, y: -0.55, z: -0.04, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.8, ease: 'power2.out' });
     }
     setSelectedComp(null);
   };
 
   return (
-    <div ref={containerRef} className="schematic-wrapper">
+    <div ref={containerRef} className={`schematic-wrapper ${hero ? 'hero-schematic' : ''}`} onKeyDown={(event) => { if (event.key === 'Escape') setSelectedComp(null); }}>
       <div className="schematic-3d-viewport relative">
-        <canvas ref={canvasRef} id="three-helmet-canvas" />
+        <canvas ref={canvasRef} id="three-helmet-canvas" tabIndex={0} aria-label="Interactive helmet. Drag or use arrow keys to rotate. Use the sensor buttons to inspect components." />
+        {unavailable && <img className="helmet-fallback" src="/001.png" alt="Suraksha One helmet prototype. Interactive 3D is unavailable in this browser." />}
         <div className="viewport-hud-hint">
-          <i className="fa-solid fa-arrows-spin mr-2"></i>Drag to Rotate &bull; Click Nodes to Inspect
+          <i className="fa-solid fa-arrows-spin mr-2"></i>{unavailable ? '3D preview unavailable / Explore sensors below' : 'Drag to rotate / Select a sensor to explore'}
         </div>
         <div className="viewport-controls-overlay">
           <button 
@@ -527,11 +556,11 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
           >
             {isExploded ? (
               <>
-                <i className="fa-solid fa-compress mr-1"></i> Assemble Helmet View
+                <i className="fa-solid fa-compress mr-1"></i> Assemble
               </>
             ) : (
               <>
-                <i className="fa-solid fa-layer-group mr-1"></i> Explode 3D Component Callouts
+                <i className="fa-solid fa-layer-group mr-1"></i> Explode view
               </>
             )}
           </button>
@@ -542,13 +571,15 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
           >
             <i className="fa-solid fa-arrows-rotate mr-1"></i> Reset View
           </button>
+          <button onClick={() => setIsPaused(!isPaused)} className="btn-3d-action secondary" aria-pressed={isPaused}>{isPaused ? 'Resume rotation' : 'Pause rotation'}</button>
         </div>
 
         {/* 3D Component Callouts Detail Popover Panel */}
-        <div className={`component-popover-modal ${selectedComp ? 'active' : ''}`}>
+        <div className={`component-popover-modal ${selectedComp ? 'active' : ''}`} role="region" aria-label="Sensor details">
           {selectedComp && (
             <div className="popover-content">
-              <button 
+              <button
+                aria-label="Close sensor details"
                 onClick={() => setSelectedComp(null)}
                 className="popover-close-btn"
               >
@@ -584,11 +615,11 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.2rem' }}>
           {[
             { id: 'mq4', label: 'MQ4 Gas' },
-            { id: 'mpu', label: 'MPU6050' },
+            { id: 'mpu', label: 'Display' },
             { id: 'max', label: 'ESP32-CAM' },
             { id: 'hall', label: 'Hall Sensor' },
             { id: 'gps', label: 'GPS' },
-            { id: 'comms', label: 'OLED & Audio' }
+            { id: 'comms', label: 'Processor' }
           ].map(sensor => (
             <button
               key={sensor.id}
@@ -598,6 +629,7 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
                 toggleExploded3D(true);
               }}
               className={`hero-badge cursor-pointer ${selectedComp === sensor.id ? 'active' : ''}`}
+              aria-pressed={selectedComp === sensor.id}
               style={{ margin: 0 }}
             >
               {sensor.label}
@@ -606,7 +638,7 @@ export default function ThreeHelmet({ playHoverClick, playExplodeHiss }) {
         </div>
 
         <div className="schematic-chip-name" id="schematic-chip-name">
-          {selectedComp ? componentDetailsMap[selectedComp].chip : 'SURAKSHA V1 CORE MODULE'}
+          {selectedComp ? 'SELECTED COMPONENT' : 'EXPLORE THE SENSORS'}
         </div>
         <h2 className="schematic-sensor-title text-left" id="schematic-sensor-title">
           {selectedComp ? componentDetailsMap[selectedComp].title : 'Interactive 3D Helmet schematic'}

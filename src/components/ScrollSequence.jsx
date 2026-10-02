@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import TelemetryHUD from './TelemetryHUD';
+import { removeFrameBackdrop } from './frameMatte';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,6 +20,7 @@ export default function ScrollSequence({ onScrubAlarm }) {
 
   // Store preprocessed canvas offscreen images
   const frameImagesRef = useRef([]);
+  const processedFramesRef = useRef(new Map());
   const currentFrameIndexRef = useRef(0);
 
   const processFrameImage = (img) => {
@@ -32,21 +34,7 @@ export default function ScrollSequence({ onScrubAlarm }) {
       oCtx.drawImage(img, 0, 0);
 
       const imgData = oCtx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        // Background is light grey/white. Check minimum of RGB channels.
-        const minVal = Math.min(r, g, b);
-        if (minVal > 175) {
-          // Fade-out pixels between 175 and 235
-          const alpha = Math.max(0, Math.min(255, (235 - minVal) * 4.25));
-          data[i + 3] = Math.min(data[i + 3], alpha);
-        }
-      }
+      removeFrameBackdrop(imgData.data, w, h);
       oCtx.putImageData(imgData, 0, 0);
       return offscreen;
     } catch (e) {
@@ -56,6 +44,7 @@ export default function ScrollSequence({ onScrubAlarm }) {
   };
 
   useEffect(() => {
+    processedFramesRef.current.clear();
     let active = true;
     let loaded = 0;
     const images = [];
@@ -67,7 +56,7 @@ export default function ScrollSequence({ onScrubAlarm }) {
 
       img.onload = () => {
         if (!active) return;
-        images[i - 1] = processFrameImage(img);
+        images[i - 1] = img;
         loaded++;
         setLoadedCount(loaded);
         setProgressPercent(Math.round((loaded / totalFrames) * 100));
@@ -101,7 +90,13 @@ export default function ScrollSequence({ onScrubAlarm }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const img = frameImagesRef.current[index];
+    const processed = processedFramesRef.current;
+    if (!processed.has(index)) {
+      processed.set(index, processFrameImage(frameImagesRef.current[index]));
+      // Keep a few adjacent frames warm without retaining 100 extra canvases.
+      if (processed.size > 5) processed.delete(processed.keys().next().value);
+    }
+    const img = processed.get(index);
     const rect = canvas.getBoundingClientRect();
     const cWidth = rect.width;
     const cHeight = rect.height;
@@ -114,7 +109,7 @@ export default function ScrollSequence({ onScrubAlarm }) {
 
     let drawWidth, drawHeight, drawX, drawY;
 
-    if (canvasRatio > imgRatio) {
+    if (canvasRatio < imgRatio) {
       drawWidth = cWidth;
       drawHeight = cWidth / imgRatio;
       drawX = 0;
@@ -126,6 +121,11 @@ export default function ScrollSequence({ onScrubAlarm }) {
       drawY = 0;
     }
 
+    const framingScale = .92 + .48 * Math.max(0, 1 - Math.min(index, totalFrames - 1 - index) / 20);
+    drawWidth *= framingScale;
+    drawHeight *= framingScale;
+    drawX = (cWidth - drawWidth) / 2;
+    drawY = (cHeight - drawHeight) / 2;
     ctx.clearRect(0, 0, cWidth, cHeight);
     ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
     currentFrameIndexRef.current = index;
@@ -152,12 +152,12 @@ export default function ScrollSequence({ onScrubAlarm }) {
     // Set up canvas sizes initial check
     resizeCanvas();
 
+    const resizeObserver = new ResizeObserver(resizeCanvas);
+    resizeObserver.observe(canvasRef.current);
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
-
-    const scrollTriggerInstance = ScrollTrigger.create({
+    const scrollTriggerInstance = prefersReducedMotion ? null : ScrollTrigger.create({
       trigger: containerRef.current,
-      start: 'top top',
+      start: () => `top ${document.querySelector('.site-header')?.offsetHeight || 0}px`,
       end: '+=2600',
       pin: pinnedRef.current,
       pinSpacing: true,
@@ -177,24 +177,24 @@ export default function ScrollSequence({ onScrubAlarm }) {
       }
     });
 
-    window.addEventListener('resize', resizeCanvas);
-
     // Force ScrollTrigger calculations update
-    setTimeout(() => {
+    const refreshTimer = setTimeout(() => {
       ScrollTrigger.refresh();
       resizeCanvas();
     }, 400);
 
     return () => {
-      scrollTriggerInstance.kill();
-      window.removeEventListener('resize', resizeCanvas);
+      clearTimeout(refreshTimer);
+      scrollTriggerInstance?.kill();
+      resizeObserver.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
   return (
-    <div ref={containerRef} id="sequence" className="sequence-container-wrapper">
+    <section ref={containerRef} id="sequence" className="sequence-container-wrapper" aria-label="Prototype walkthrough">
       <div ref={pinnedRef} className="sequence-pinned-section">
+        <div className="sequence-stage-label"><span>INSIDE SURAKSHA ONE</span><span>PROTOTYPE WALKTHROUGH / SCROLL TO EXPLORE ↓</span></div>
         {/* Preloader Overlay */}
         <div className={`sequence-preloader ${isLoaded ? 'loaded' : ''}`}>
           <div className="preloader-spinner"></div>
@@ -208,18 +208,15 @@ export default function ScrollSequence({ onScrubAlarm }) {
         </div>
 
         {/* Canvas */}
-        <canvas ref={canvasRef} id="sequence-canvas" />
-        <div className="canvas-blend-vignette" />
-
-        {/* HUD Corner Target Brackets */}
-        <div className="hud-corner hud-corner-tl"></div>
-        <div className="hud-corner hud-corner-tr"></div>
-        <div className="hud-corner hud-corner-bl"></div>
-        <div className="hud-corner hud-corner-br"></div>
+        <div className="sequence-visual">
+          <div className="sequence-orbit" aria-hidden="true" />
+          <canvas ref={canvasRef} id="sequence-canvas" aria-label="Suraksha One prototype assembling and separating as you scroll" />
+          <span className="sequence-visual-caption">THE REAL PROTOTYPE / COMPONENT VIEW</span>
+        </div>
 
         {/* Pinned Telemetry HUD Overlay */}
         {isLoaded && <TelemetryHUD progress={scrollProgress} />}
       </div>
-    </div>
+    </section>
   );
 }

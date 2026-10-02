@@ -227,8 +227,10 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
 
   // GSAP Viewport Scroll Animations
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const context = gsap.context(() => {
     // Animate Hero section elements on load
-    gsap.fromTo('.hero-badge, .hero-section .hero-title, .hero-section .hero-desc, .hero-actions .btn-primary, .hero-actions .btn-secondary',
+    gsap.fromTo('.hero-copy > *, .hero-product',
       { opacity: 0, y: 30 },
       { opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: 'power4.out', delay: 0.2 }
     );
@@ -276,123 +278,107 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
       }
     });
 
-    return () => {
-      ScrollTrigger.getAll().forEach(t => {
-        if (t.trigger && (
-          t.trigger.classList?.contains('section-header') || 
-          t.trigger.classList?.contains('news-slider-track') || 
-          t.trigger.classList?.contains('pi-slider-track') || 
-          t.trigger.classList?.contains('hardware-modules-grid')
-        )) {
-          t.kill();
-        }
-      });
-    };
+    });
+    return () => context.revert();
   }, []);
 
   return (
     <>
-      {/* Site Header */}
       <header className="site-header">
         <div className="header-container">
-          <a href="#" className="brand-logo" onClick={(e) => e.preventDefault()}>
-            <div className="brand-icon-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-5.45 9-12V7l-9-5z"/>
-                <path d="M12 8v4M12 16h.01"/>
+          <a href="#hero" className="brand-logo" aria-label="Suraksha One home">
+            <span className="brand-icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M12 3 4 6v6c0 4 3 7 8 9 5-2 8-5 8-9V6z" />
+                <path d="m8 12 3 3 5-6" />
               </svg>
-              <span className="status-beacon"></span>
-            </div>
-            <div className="brand-title-group">
-              <span className="brand-name">SURAKSHA ONE</span>
-              <span className="brand-tag">INDUSTRIAL PPE v2.4</span>
-            </div>
+            </span>
+            <span className="brand-title-group">
+              <span className="brand-name">suraksha<span className="brand-one">one.</span></span>
+              <span className="brand-tag">CONNECTED WORKER SAFETY</span>
+            </span>
           </a>
-
-          <nav>
+          <nav aria-label="Main navigation">
             <ul className="nav-links">
               <li><a href="#hero" className="nav-link">Overview</a></li>
-              <li><a href="#sequence" className="nav-link">Video Scrub</a></li>
-              <li><a href="#impact" className="nav-link">Impact & News</a></li>
-              <li><a href="#hardware" className="nav-link">Hardware Spec</a></li>
-              <li><a href="#schematic" className="nav-link">3D Blueprint</a></li>
-              <li>
-                <a
-                  href="https://suraksha-one-ten.vercel.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-header-dashboard cursor-pointer"
-                >
-                  <i className="fa-solid fa-gauge-high mr-1"></i> Live Dashboard &rarr;
-                </a>
-              </li>
+              <li><a href="#sequence" className="nav-link">How it works</a></li>
+              <li><a href="#hardware" className="nav-link">Hardware</a></li>
+              <li><a href="#impact" className="nav-link">Research</a></li>
             </ul>
           </nav>
+          <button onClick={onGoToDashboard} className="btn-header-dashboard">Open dashboard <span aria-hidden="true">↗</span></button>
+          <details className="mobile-nav">
+            <summary aria-label="Open navigation">Menu <span aria-hidden="true">+</span></summary>
+            <nav aria-label="Mobile navigation" onClick={(event) => { event.currentTarget.closest('details').open = false; }}>
+              <a href="#hero">Overview</a>
+              <a href="#sequence">How it works</a>
+              <a href="#hardware">Hardware</a>
+              <a href="#impact">Research</a>
+              <a href="#helmet-explorer">3D explorer</a>
+            </nav>
+          </details>
         </div>
       </header>
 
-      {/* Main Landing Layout */}
-      <main>
-        
-        {/* Hero Section */}
-        <section id="hero" className="hero-section">
-          <div className="hero-glow-mesh"></div>
-          
-          <div className="hero-badge">
-            <span className="pill-dot"></span>
-            ESP32 & ESP32-CAM DUAL-CORE PRE-ENTRY HARNESS ONLINE
-          </div>
-          
-          <h1 className="hero-title">
-            A Smart Helmet That <span className="highlight">Senses Danger</span><br />
-            Before A Worker Steps Into It
-          </h1>
-          
-          <p className="hero-subtitle text-slate-400">
-            Combining pre-entry toxic gas detection with real-time fall, impact, and vital telemetry monitoring in a single smart helmet to eliminate preventable workplace fatalities across construction and sewer operations.
-          </p>
-          
-          <div className="hero-cta-group">
-            <a
-              href="https://suraksha-one-ten.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary cursor-pointer"
-            >
-              <i className="fa-solid fa-bolt-lightning mr-1"></i>
-              Launch Standalone Dashboard &rarr;
-            </a>
-            <a href="#schematic" className="btn-secondary">
-              <i className="fa-solid fa-cube mr-1"></i>
-              Inspect 3D Helmet Viewport
-            </a>
+      <main id="main-content">
+        <section id="hero" className="hero-section" aria-labelledby="hero-title">
+          <div className="hero-copy">
+            <div className="hero-badge"><span className="pill-dot" />SMART HELMET. HUMAN FIRST.</div>
+            <h1 id="hero-title" className="hero-title">Safety.<br />One step<br /><span className="highlight">ahead.</span></h1>
+            <p className="hero-subtitle">Sense danger before stepping into it. Pre-entry gas detection, fall alerts, and connected monitoring — built into one smart helmet.</p>
+            <div className="hero-cta-group">
+              <button onClick={onGoToDashboard} className="btn-primary">Explore dashboard <span aria-hidden="true">↗</span></button>
+              <a href="#sequence" className="btn-secondary"><span className="play-icon" aria-hidden="true">▷</span> Discover the system</a>
+            </div>
+            <div className="hero-proof"><span className="proof-symbol" aria-hidden="true">✓</span> Open hardware. Connected protection.<br /><span className="proof-caption">For construction sites and confined spaces.</span></div>
           </div>
 
-          {/* Hero Micro-Widget Bar */}
-          <div className="hero-widgets-row">
-            <div className="widget-chip">
-              <i className="fa-solid fa-shield-virus" style={{ color: 'var(--safe-bright)' }}></i>
-              <span>MQ4 Gas Sensing: <strong>{liveGas} PPM SAFE</strong></span>
+          <div id="helmet-explorer" className="hero-product">
+            <div className="product-topline"><span><span className="pill-dot" /> SURAKSHA ONE / V1</span><span className="product-tag">INTERACTIVE CONCEPT</span></div>
+            <div className="product-orbit" aria-hidden="true" />
+            <span className="product-watermark" aria-hidden="true">S1</span>
+            <ThreeHelmet hero playHoverClick={playHoverClick} playExplodeHiss={playExplodeHiss} />
+            <div className="product-readout">
+              <div className="readout-heading"><span><span className="pill-dot" /> Sensor preview</span><span>SIMULATED</span></div>
+              <div className="readout-values">
+                <div><span>Gas level</span><strong>{liveGas}<small> ppm</small></strong></div>
+                <div><span>Blood oxygen</span><strong>{liveSpO2}<small> %</small></strong></div>
+                <div><span>Heart rate</span><strong>{liveHeartRate}<small> bpm</small></strong></div>
+              </div>
             </div>
-            <div className="widget-chip">
-              <i className="fa-solid fa-satellite-dish" style={{ color: 'var(--hud-cyan-bright)' }}></i>
-              <span>GPS Satellites: <strong>{liveGpsSats} LOCKS</strong></span>
-            </div>
-            <div className="widget-chip">
-              <i className="fa-solid fa-microchip" style={{ color: 'var(--amber-bright)' }}></i>
-              <span>ESP32 Core: <strong>240MHz DUAL</strong></span>
-            </div>
-          </div>
-          
-          <div className="scroll-cue">
-            <span>Scroll to scrub 100-frame video sequence</span>
-            <div className="scroll-mouse">
-              <div className="scroll-wheel"></div>
-            </div>
+            <div className="product-caption"><span>01 / THE CONNECTED HELMET</span><a href="#hardware">Meet the hardware ↗</a></div>
           </div>
         </section>
 
+        <div className="capability-strip" aria-label="Helmet capabilities">
+          <div><span className="capability-index">01</span><div><strong>Detect before entry</strong><span>MQ4 & MQ6 gas sensing</span></div></div>
+          <div><span className="capability-index">02</span><div><strong>Stay connected</strong><span>Vitals & location monitoring</span></div></div>
+          <div><span className="capability-index">03</span><div><strong>Respond to danger</strong><span>Fall & impact alerts</span></div></div>
+          <a href="#sequence" className="strip-link">Discover the system <span aria-hidden="true">↓</span></a>
+        </div>
+
         <div className="section-divider"></div>
+
+        <section id="schematic" className="system-preview content-section" aria-labelledby="system-title">
+          <div className="system-intro">
+            <div className="section-tag">AWARENESS. BUILT IN.</div>
+            <h2 id="system-title" className="section-title">One helmet.<br />A wider view.</h2>
+            <p className="section-desc">From the air around you to the people beside you. Bring every signal into focus.</p>
+            <button onClick={onGoToDashboard} className="btn-secondary">Enter the demo console <span aria-hidden="true">↗</span></button>
+          </div>
+          <div className="signal-card gas-signal">
+            <div className="signal-card-top"><span>01 / ENVIRONMENT</span><i className="fa-solid fa-wind" aria-hidden="true" /></div>
+            <div className="signal-value">{liveGas}<small> ppm</small></div>
+            <svg className="signal-wave" viewBox="0 0 300 60" fill="none" aria-hidden="true"><path d="M0 46 25 46 38 25 52 48 73 40 91 43 109 12 125 48 145 39 160 43 178 18 193 41 220 33 235 45 257 24 276 41 300 38" /></svg>
+            <h3>Know before you go.</h3><p>Gas sensing before entry.</p><span className="signal-note"><span className="pill-dot" /> SIMULATED READING</span>
+          </div>
+          <div className="signal-card vitals-signal">
+            <div className="signal-card-top"><span>02 / PEOPLE</span><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></div>
+            <div className="signal-value">{liveHeartRate}<small> bpm</small></div>
+            <svg className="signal-wave" viewBox="0 0 300 60" fill="none" aria-hidden="true"><path d="M0 33H62L74 23 85 40 102 4 116 57 131 26 143 33H200L212 23 222 39 238 8 251 51 263 28 275 33H300" /></svg>
+            <h3>Every worker, connected.</h3><p>Vitals in a shared safety view.</p><span className="signal-note">DEMO DATA / {liveSpO2}% SpO₂</span>
+          </div>
+        </section>
 
         {/* Scroll Sequence Section */}
         <ScrollSequence onScrubAlarm={onScrubAlarm} />
@@ -405,13 +391,13 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
             <div className="ticker-label-group">
               <span className="ticker-label">
                 <span className="live-pulse-dot"></span>
-                LIVE STREAM
+                DEMO STREAM
               </span>
               <span className="ticker-timestamp">{clockTime}</span>
             </div>
             <div className="ticker-track">
               <div className="ticker-content">
-                [LIVE SENSOR STREAM] Node #04 ESP32 Online &bull; MQ4 Gas: {liveGas} PPM (SAFE) &bull; MPU6050: 1.0G &bull; GPS: {liveGpsSats} Satellites Locked &bull; SpO2: {liveSpO2}% &bull; Heart Rate: {liveHeartRate} BPM &nbsp;&bull;&nbsp; [SAFE IN INDIA CRUSHED DATA] 7,000+ Automobile Supply Chain Injuries &bull; 10,000+ Injured Workers Assisted Since 2016 &bull; [CONSTRUCTION COMPLIANCE] Bengaluru site safety audits ordered &bull; Sewri-Worli elevated contractor penalised.
+                [SIMULATED SENSOR STREAM] Node #04 ESP32 Online &bull; MQ4 Gas: {liveGas} PPM (SAFE) &bull; MPU6050: 1.0G &bull; GPS: {liveGpsSats} Satellites Locked &bull; SpO2: {liveSpO2}% &bull; Heart Rate: {liveHeartRate} BPM &nbsp;&bull;&nbsp; [SAFE IN INDIA CRUSHED DATA] 7,000+ Automobile Supply Chain Injuries &bull; 10,000+ Injured Workers Assisted Since 2016 &bull; [CONSTRUCTION COMPLIANCE] Bengaluru site safety audits ordered &bull; Sewri-Worli elevated contractor penalised.
               </div>
             </div>
           </div>
@@ -443,8 +429,8 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
           </div>
 
           <div className="section-header">
-            <div className="section-tag">VERIFIED INDUSTRIAL & WORKER SAFETY REPORTS</div>
-            <h2 className="section-title">Verified Industrial & Worker Safety Reports</h2>
+            <div className="section-tag">THE REASON WE BUILD</div>
+            <h2 className="section-title">Behind every statistic, a worker.</h2>
             <p className="section-desc">
               Click any card to inspect the official safety reports, foundation publications (Safe in India), and verified news audits (The Hindu, Indian Express) detailing industrial hazards.
             </p>
@@ -456,6 +442,7 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
               <button
                 key={filter}
                 onClick={() => setNewsFilter(filter)}
+                aria-pressed={newsFilter === filter}
                 className={`filter-chip ${newsFilter === filter ? 'active' : ''}`}
               >
                 {filter === 'all' ? 'All Safety Reports' : filter.toUpperCase().replace('-', ' ')}
@@ -495,6 +482,15 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
                 <div
                   key={card.id}
                   onClick={() => handleCardClick(card.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleCardClick(card.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Read report: ${card.title}`}
                   className="news-card-slide"
                   data-category={card.category}
                   data-doc-id={card.id}
@@ -542,8 +538,8 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
         {/* Match matrix */}
         <section className="content-section">
           <div className="section-header">
-            <div className="section-tag">PROBLEM & IMPACT MATCH MATRIX</div>
-            <h2 className="section-title">Closing The Safety Gap</h2>
+            <div className="section-tag">DESIGNED AROUND REAL RISKS</div>
+            <h2 className="section-title">Closing the safety gap.</h2>
             <p className="section-desc">
               Mapping Suraksha One's hardware & sensor innovations directly to the 5 core workplace hazards causing preventable fatalities across India.
             </p>
@@ -615,7 +611,7 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
         <section id="hardware" className="content-section">
           <div className="section-header">
             <div className="section-tag">HARDWARE SPECIFICATION</div>
-            <h2 className="section-title">Sensor & Microcontroller Ecosystem</h2>
+            <h2 className="section-title">Small components. A bigger purpose.</h2>
             <p className="section-desc">
               Every component in Suraksha One is selected for industrial reliability, low power consumption, and real-time telemetry throughput.
             </p>
@@ -698,34 +694,13 @@ export default function LandingPage({ onGoToDashboard, playHoverClick, playExplo
 
         <div className="section-divider"></div>
 
-        {/* 3D Helmet schematic */}
-        <section id="schematic" className="content-section">
-          <div className="section-header">
-            <div className="section-tag">THREE.JS INTERACTIVE 3D BLUEPRINT INSPECTOR</div>
-            <h2 className="section-title">Exploded 3D Component Architecture</h2>
-            <p className="section-desc">Click anywhere on the 3D helmet model or press the button below to trigger an exploded 3D levitation view with floating hardware component callouts.</p>
-          </div>
-
-          <ThreeHelmet 
-            playHoverClick={playHoverClick} 
-            playExplodeHiss={playExplodeHiss} 
-          />
-        </section>
-
         {/* Call to action */}
         <div className="cta-banner-section">
-          <h2 className="cta-banner-title">Ready To Inspect Real-Time Telemetry?</h2>
+          <h2 className="cta-banner-title">See the whole picture.</h2>
           <p className="cta-banner-desc">
-            Launch the standalone live telemetry console to monitor gas levels, heart rate, SpO2, G-force impacts, and simulated emergency dispatches in real time.
+            Explore the demo console for worker vitals, gas readings, and emergency alerts in one place.
           </p>
-          <a
-            href="https://suraksha-one-ten.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary font-semibold text-lg py-4 px-10 cursor-pointer"
-          >
-            Open Standalone Live Dashboard &rarr;
-          </a>
+          <button onClick={onGoToDashboard} className="btn-primary">Open dashboard <span aria-hidden="true">↗</span></button>
         </div>
 
       </main>

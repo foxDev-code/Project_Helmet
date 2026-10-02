@@ -53,44 +53,45 @@ export default function TelemetryHUD({ progress }) {
 
   const storySteps = [
     {
-      title: '1. Pre-Entry Gas Sampling',
+      title: 'Know the air. Before you enter.',
       desc: 'MQ4 & MQ6 sensors sample manhole atmosphere before human entry'
     },
     {
-      title: '2. Confined Space Monitoring',
+      title: 'Awareness that stays with you.',
       desc: 'Continuous internal atmosphere & vital telemetry streaming'
     },
     {
-      title: '3. Methane Hazard Triggered',
+      title: 'A warning you can’t miss.',
       desc: 'Toxic gas spike immediately fires RGB ring & 85dB piezo alarm'
     },
     {
-      title: '4. Free-Fall & Impact Alert',
+      title: 'An impact. An instant alert.',
       desc: 'MPU6050 detects 4.8G fall impact trajectory instantly'
     },
     {
-      title: '5. Automated Emergency Dispatch',
+      title: 'The signal that brings help.',
       desc: 'GPS coordinates & worker identity broadcasted to supervisor'
     }
   ];
 
   return (
-    <div className="canvas-hud-overlay absolute inset-0 z-10 pointer-events-none p-14 flex flex-col justify-between">
+    <div className="canvas-hud-overlay">
       {/* High-Tech Progress Tracker Bar */}
-      <div className="hud-progress-bar-container w-full h-[2px] bg-white/5 mb-4 relative overflow-hidden rounded">
+      <div className="hud-progress-bar-container">
         <div 
-          className="hud-progress-bar-fill h-full bg-amber-bright shadow-[0_0_8px_#ffb000] transition-all duration-100 ease-out" 
+          className="hud-progress-bar-fill"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
 
-      <div className="hud-header flex justify-between items-start">
+      <div className="hud-header">
         <div className={`hud-badge ${badgeClass}`}>
           <span className="hud-badge-dot" />
           <span id="hud-badge-text">{badgeText}</span>
         </div>
 
         <div className="hud-telemetry-box">
+          <div className="hud-demo-label">SCENARIO TELEMETRY / SIMULATED</div>
           <div className="hud-row">
             <span className="hud-label">MQ4 METHANE:</span>
             <span id="hud-gas-val" className="hud-val" style={{ color: gasColor }}>
@@ -113,14 +114,14 @@ export default function TelemetryHUD({ progress }) {
       </div>
 
       {/* Dynamic Fading Story Overlay Text */}
-      <div className="hud-story-headline relative w-full flex justify-center items-center h-32">
+      <div className="hud-story-headline">
+        <div className="sequence-chapter">HOW IT WORKS <span>0{activeStep + 1} / 05</span></div>
+        <div className="sequence-chapters" aria-hidden="true">{storySteps.map((_, idx) => <span key={idx} className={idx <= activeStep ? 'complete' : ''} />)}</div>
         {storySteps.map((step, idx) => (
           <div
             key={idx}
             className={`story-step ${idx === activeStep ? 'active' : ''}`}
-            style={{
-              pointerEvents: 'none',
-            }}
+            aria-hidden={idx !== activeStep}
           >
             <h2>{step.title}</h2>
             <p>{step.desc}</p>

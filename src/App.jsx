@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
-import ThreeBackground from './components/ThreeBackground';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('landing');
@@ -231,12 +230,6 @@ export default function App() {
 
   return (
     <>
-      {/* Noise background overlay */}
-      <div className="noise-bg" />
-
-      {/* Three.js Constellation Background */}
-      <ThreeBackground />
-
       {/* Pages render */}
       {currentPage === 'landing' ? (
         <LandingPage
@@ -258,6 +251,8 @@ export default function App() {
         onClick={handleAudioBtnClick}
         className={`btn-audio-toggle-floating ${!isAudioMuted ? 'active' : ''}`}
         title={isAudioMuted ? 'Unmute Audio Context' : 'Mute Audio Context'}
+        aria-label={isAudioMuted ? 'Enable sound effects' : 'Mute sound effects'}
+        aria-pressed={!isAudioMuted}
         data-cursor-hover="hover-danger"
         data-cursor-text={isAudioMuted ? 'UNMUTE' : 'MUTE'}
       >

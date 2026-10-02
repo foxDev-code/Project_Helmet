@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const mockInitialWorkers = {
   'worker-1': {
@@ -91,6 +91,14 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
   const [clockStr, setClockStr] = useState('');
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [commandInput, setCommandInput] = useState('');
+  const drawerRef = useRef(null);
+
+  useEffect(() => {
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+    drawer.showModal();
+    return () => drawer.close();
+  }, [selectedAdminUid]);
 
   // Live Clock
   useEffect(() => {
@@ -185,17 +193,17 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
   return (
     <div className="dash-layout min-h-screen text-left font-sans flex flex-col justify-between">
       <div>
-        <div className="hazard-bar h-[6px] w-full" style={{ background: 'repeating-linear-gradient(135deg, #ff8c1a 0 18px, #14181c 18px 36px)' }} />
+
 
         {/* Topbar navigation bar */}
-        <header className="flex justify-between items-center p-6 bg-[#1b2126] border-b border-[#2c353d]">
+        <header className="dashboard-header flex justify-between items-center p-6 bg-[#1b2126] border-b border-[#2c353d]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff8c1a] to-[#d9600a] flex items-center justify-center font-bold text-xl text-[#14181c] font-mono">
-              SG
+              S1
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-wide uppercase text-white font-mono leading-none m-0">SiteGuard</h2>
-              <span className="text-[10px] uppercase text-[#9aa5b1] tracking-wider">Helmet Telemetry network</span>
+              <h2 className="text-xl font-bold tracking-wide uppercase text-white font-mono leading-none m-0">Suraksha One</h2>
+              <span className="text-[10px] uppercase text-[#9aa5b1] tracking-wider">Worker safety console</span>
             </div>
           </div>
 
@@ -215,7 +223,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                   role === 'admin' ? 'bg-[#ff8c1a] text-[#1a1206]' : 'text-[#9aa5b1] hover:text-white'
                 }`}
               >
-                Admin
+                Supervisor
               </button>
               <button
                 onClick={() => setRole('worker')}
@@ -234,6 +242,16 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
 
         {/* Content area */}
         <main className="max-w-[1240px] mx-auto p-6">
+          <div className="dashboard-heading">
+            <div><div className="section-tag">WORKER SAFETY / OVERVIEW</div><h1>Every signal, in sight.</h1><p>Monitor your crew and explore connected helmet telemetry.</p></div>
+            <span className="demo-badge"><span className="pill-dot" /> Simulation mode</span>
+          </div>
+          <div className="dashboard-summary">
+            <div><span>Connected workers</span><strong>{Object.keys(workers).length.toString().padStart(2, '0')}</strong></div>
+            <div><span>Gas warnings</span><strong className="text-amber-bright">{Object.values(workers).filter(w => w.sensorData.methane > 1000).length.toString().padStart(2, '0')}</strong></div>
+            <div><span>Fall alerts</span><strong className="text-danger-bright">{Object.values(workers).filter(w => w.sensorData.fallDetected).length.toString().padStart(2, '0')}</strong></div>
+            <div><span>Data source</span><strong className="summary-source">Demo sensors</strong></div>
+          </div>
           {role === 'worker' ? (
             /* WORKER INDIVIDUAL DASHBOARD VIEW */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -242,6 +260,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                 <div className="card">
                   <div className="text-[#9aa5b1] text-xs uppercase tracking-wider mb-2 font-mono">Simulate Worker Profile</div>
                   <select
+                    aria-label="Select worker profile"
                     value={activeWorkerId}
                     onChange={(e) => setActiveWorkerId(e.target.value)}
                     className="w-full bg-[#212930] border border-[#2c353d] text-white p-3 rounded-md mb-4 outline-none font-mono text-sm"
@@ -337,7 +356,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
           ) : (
             /* ADMIN SUPERVISOR ROSTER TABLE VIEW */
             <div className="flex flex-col gap-6">
-              <div className="card p-0 overflow-hidden border border-[#2c353d]">
+              <div className="card roster-card p-0 border border-[#2c353d]">
                 <table className="w-full text-left border-collapse font-mono text-sm">
                   <thead>
                     <tr className="bg-[#212930] text-[#ff8c1a] border-b border-[#2c353d]">
@@ -358,6 +377,14 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                         <tr
                           key={uid}
                           onClick={() => setSelectedAdminUid(uid)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setSelectedAdminUid(uid);
+                            }
+                          }}
+                          tabIndex={0}
+                          aria-label={`View ${w.name} telemetry`}
                           className={`border-b border-[#2c353d] cursor-pointer hover:bg-[#262f37] transition-all ${
                             hasWarning ? 'bg-[rgba(255,59,59,0.06)]' : ''
                           }`}
@@ -393,15 +420,18 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
 
               {/* Admin Overlay Drawer Drawer */}
               {selectedAdminUid && (
-                <div
+                <dialog
+                  ref={drawerRef}
+                  aria-labelledby="worker-detail-title"
+                  onCancel={() => setSelectedAdminUid(null)}
                   onClick={(e) => e.target === e.currentTarget && setSelectedAdminUid(null)}
-                  className="fixed inset-0 bg-[rgba(0,0,0,0.8)] backdrop-blur-md z-50 flex justify-end"
+                  className="worker-dialog fixed inset-0 bg-[rgba(0,0,0,0.8)] backdrop-blur-md z-50 flex justify-end"
                 >
                   <div className="w-full max-w-[500px] h-full bg-[#1b2126] border-l border-[#2c353d] p-6 overflow-y-auto flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-center mb-6 border-b border-[#2c353d] pb-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-white font-mono m-0">
+                          <h3 id="worker-detail-title" className="text-2xl font-bold text-white font-mono m-0">
                             {workers[selectedAdminUid].name}
                           </h3>
                           <span className="text-xs text-[#4fb0e6] font-mono">
@@ -409,6 +439,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                           </span>
                         </div>
                         <button
+                          aria-label="Close worker details"
                           onClick={() => setSelectedAdminUid(null)}
                           className="bg-transparent border-none text-white text-3xl cursor-pointer"
                         >
@@ -474,6 +505,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                         <div className="flex gap-2">
                           <input
                             type="text"
+                            aria-label="Custom supervisor directive"
                             placeholder="Type custom directive..."
                             value={commandInput}
                             onChange={(e) => setCommandInput(e.target.value)}
@@ -503,7 +535,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
                       </div>
                     </div>
                   </div>
-                </div>
+                </dialog>
               )}
             </div>
           )}
@@ -511,7 +543,7 @@ export default function Dashboard({ onGoBack, playHoverClick, playAlarmSound }) 
       </div>
 
       <footer className="p-6 bg-[#14181c] border-t border-[#2c353d] text-center text-xs text-[#5f6b76] font-mono mt-auto">
-        &copy; 2026 SiteGuard Network Operations Center. Compliant with IS 16588:2026 Standards.
+        &copy; 2026 Suraksha One. Demo telemetry — commands and alerts are simulated.
       </footer>
     </div>
   );

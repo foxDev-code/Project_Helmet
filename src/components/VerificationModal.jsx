@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const govtDocsData = {
   'doc-chamoli': {
@@ -149,13 +149,21 @@ const govtDocsData = {
 };
 
 export default function VerificationModal({ docId, onClose }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+
   if (!docId) return null;
   const data = govtDocsData[docId] || govtDocsData['doc-chamoli'];
 
   return (
-    <div className="govt-doc-modal active">
+    <dialog ref={dialogRef} className="govt-doc-modal" aria-labelledby="report-title" onCancel={onClose}>
       <div className="govt-doc-modal-content">
-        <button className="popover-close-btn" onClick={onClose}>
+        <button className="popover-close-btn" onClick={onClose} aria-label="Close safety report" autoFocus>
           &times;
         </button>
 
@@ -165,7 +173,7 @@ export default function VerificationModal({ docId, onClose }) {
           </div>
           <div>
             <div className="govt-modal-sub">{data.org}</div>
-            <h3 className="govt-modal-title">{data.title}</h3>
+            <h3 id="report-title" className="govt-modal-title">{data.title}</h3>
           </div>
         </div>
 
@@ -221,6 +229,6 @@ export default function VerificationModal({ docId, onClose }) {
           </a>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
